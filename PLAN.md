@@ -561,3 +561,43 @@ small header with the wordmark linking to `/`, matching the dashboard's
 header style. Build/lint/typecheck pass; confirmed via `npm run dev` that
 `/sign-in` renders with the new header (`href="/"` present in the HTML)
 and auth protection on `/dashboard` is unaffected.
+
+## Follow-up: unreadable gray text on the dashboard
+
+User reported (via a phone screenshot of the live `/dashboard`) that
+several text elements — the agent name, the brand-kit subtitle, the
+"Listings" nav-card link, "Free plan" — rendered almost invisible,
+washed-out near-white against the white/cream cards.
+
+Root cause: `src/app/globals.css` still had a leftover
+`@media (prefers-color-scheme: dark) { :root { --background: #0a0a0a;
+--foreground: #ededed; } }` block from the default Next.js starter,
+combined with `body { color: var(--foreground); }`. The earlier "extend
+design system to all pages" pass deliberately dropped every `dark:`
+Tailwind variant in favor of one fixed light identity, but never removed
+this old media query — so on a phone/browser in system dark mode, any
+text node with no explicit Tailwind text-color class (inheriting `body`
+color) silently flipped to `#ededed`, nearly invisible on the light card
+backgrounds. Elements with an explicit color class (`text-zinc-500`,
+`text-brand`, etc.) were unaffected, which is exactly why only some text
+looked broken and the rest looked fine, matching the screenshot.
+
+Fix:
+- Removed the `@media (prefers-color-scheme: dark)` block from
+  `globals.css` entirely — `--background`/`--foreground` now stay fixed
+  at `#ffffff`/`#171717` regardless of system theme, consistent with the
+  "one light identity everywhere" decision already made for the rest of
+  the app.
+- Defensively added explicit `text-black` (and bumped one
+  `text-zinc-500` to `text-zinc-600` for the specific subtitle the user
+  called out) to the handful of elements that had been relying on
+  inherited body color: agent name, "Listings" link text, and the plan
+  label on `src/app/dashboard/page.tsx`; the "Generated assets" heading
+  and asset-type label on `src/app/dashboard/listings/[id]/page.tsx`.
+- Grepped the rest of `src/app` for the same pattern (text nodes with no
+  `text-*` class); the remaining instances (form labels, list rows on
+  `/dashboard/listings`, paragraph copy) all inherit the now-fixed
+  `body` color, so the CSS fix alone covers them without needing
+  individual edits.
+
+Build/lint/typecheck pass.

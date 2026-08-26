@@ -37,10 +37,10 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
           <div className="h-12 w-12 rounded border border-dashed border-black/20" />
         )}
         <div className="flex flex-1 flex-col">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium text-black">
             {agent.name ?? "Brand kit not set up yet"}
           </span>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-zinc-600">
             {agent.brokerage ?? "Add your brokerage, colors, logo, and headshot"}
           </span>
         </div>
@@ -64,16 +64,16 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
 
       <Link
         href="/dashboard/listings"
-        className="flex items-center justify-between rounded-lg border border-black/10 bg-white p-4 text-sm font-medium transition-colors hover:bg-black/[.04]"
+        className="flex items-center justify-between rounded-lg border border-black/10 bg-white p-4 text-sm font-medium text-black transition-colors hover:bg-black/[.04]"
       >
         Listings
-        <span className="text-zinc-400">&rarr;</span>
+        <span className="text-zinc-500">&rarr;</span>
       </Link>
 
       <div className="flex flex-col gap-4 rounded-lg border border-black/10 bg-white p-4">
         <div className="flex items-center justify-between">
           <div className="text-sm">
-            <span className="font-medium">{TIER_LABEL[agent.subscription_tier]}</span>
+            <span className="font-medium text-black">{TIER_LABEL[agent.subscription_tier]}</span>
             {agent.subscription_tier === "free" && (
               <span className="text-zinc-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
             )}

@@ -92,7 +92,7 @@ export default async function ListingDetailPage(
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold">Generated assets</h2>
+          <h2 className="text-lg font-bold text-black">Generated assets</h2>
           {assets.length > 0 && (
             <a
               href={`/api/listings/${id}/download-zip`}
@@ -114,7 +114,7 @@ export default async function ListingDetailPage(
                 className="flex items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-sm"
               >
                 <AssetThumbnail asset={asset} />
-                <span className="flex-1">{ASSET_LABEL[asset.asset_type]}</span>
+                <span className="flex-1 text-black">{ASSET_LABEL[asset.asset_type]}</span>
                 {asset.file_url && (
                   <a
                     href={asset.file_url}
