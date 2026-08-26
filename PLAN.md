@@ -499,3 +499,53 @@ network policy touches) and screenshotted that directly — confirms the
 palette itself reads as intended (contrast holds on all the text/background
 pairings used) without confirming pixel-exact output of the real page,
 which still needs a look on the actual deployment.
+
+## Follow-up: navy/gold/cream extended to the whole app
+
+Requested after seeing the landing page: apply the same colors and design
+language everywhere, not just `/`. Touched every page:
+
+- New `src/app/dashboard/layout.tsx` — a shared header (logo, Listings/
+  Brand kit nav links, `UserButton`) wrapping all `/dashboard/*` routes,
+  replacing what had been duplicated per-page. Individual pages keep their
+  own contextual "Back to X" links but no longer each render their own top
+  branding bar.
+- `/dashboard`, `/dashboard/brand-kit`, `/dashboard/listings`,
+  `/dashboard/listings/new`, `/dashboard/listings/[id]`, and the three
+  template preview pages: swapped `bg-foreground`/black buttons for solid
+  navy (`bg-brand`) primary actions and navy-outline secondary actions,
+  gold (`text-gold-dark`) for status pills and secondary links (download
+  links, bonus-listings count), cream page backgrounds with white cards,
+  headings to `font-black` navy matching the landing page's weight. Did
+  **not** touch the actual template components
+  (`src/components/templates/*`) or their preview rendering — those use
+  each *agent's own* saved brand colors by design, a different concern
+  from the app's own chrome.
+- Also dropped every `dark:` Tailwind variant across these files. The app
+  previously followed OS dark-mode preference inconsistently (scattered
+  `dark:` classes with no real dark palette behind them); given the ask was
+  for one consistent design everywhere, standardized on the light navy/
+  gold/cream identity always, matching the landing page's existing
+  approach of ignoring system dark mode.
+- Clerk's `<SignIn>`/`<SignUp>`/`<UserButton>` widgets are themed via
+  `ClerkProvider`'s `appearance.variables` in the root layout
+  (`colorPrimary: "#1a2b4c"`, `colorBackground: "#f7f3ec"`,
+  `borderRadius: "0.6rem"`) rather than per-page, so the theme applies
+  everywhere Clerk renders UI, including `UserButton` inside the new
+  dashboard layout.
+- Fixed a real pre-existing bug while touching the "New listing" page's
+  quota-exceeded upgrade button: it posted to `/api/billing/checkout`
+  without the `tier` field the route has required since the Premium-tier
+  work — would have 400'd instead of starting checkout. Added
+  `<input type="hidden" name="tier" value="pro">`.
+
+Build/lint/typecheck pass; `grep -rn "dark:\|bg-foreground\|text-background"
+src/app` returns nothing, confirming no old-style classes were missed.
+Confirmed via `npm run dev` that auth protection is unaffected by the new
+shared layout — `/dashboard`, `/dashboard/listings`, and
+`/dashboard/brand-kit` still redirect to `/sign-in` when signed out (the
+layout itself doesn't call `getOrCreateAgent()`/`auth.protect()` — each
+page still does, unchanged). Same screenshot limitation as before: needs a
+look on the real deployment to confirm the actual rendered pages, though
+the color/contrast choices themselves were already validated via the
+earlier static-HTML mockup.

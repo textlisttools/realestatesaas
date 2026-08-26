@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { getOrCreateAgent } from "@/lib/agents";
 import { FREE_TIER_LISTING_LIMIT, PAID_TIERS } from "@/lib/stripe";
 import { redeemCode } from "./actions";
@@ -18,47 +17,46 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const redeemOk = searchParams.redeem === "ok";
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-8 max-w-3xl mx-auto w-full">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <UserButton />
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 p-8">
+      <div>
+        <h1 className="text-brand text-2xl font-black tracking-tight">Dashboard</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Signed in as {agent.email ?? agent.clerk_user_id}.
+        </p>
       </div>
-      <p className="text-sm text-gray-500">
-        Signed in as {agent.email ?? agent.clerk_user_id}.
-      </p>
 
-      <div className="flex items-center gap-4 rounded-lg border border-black/10 p-4 dark:border-white/15">
+      <div className="flex items-center gap-4 rounded-lg border border-black/10 bg-white p-4">
         {agent.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not a static local asset
           <img
             src={agent.logo_url}
             alt="Brand logo"
-            className="h-12 w-12 rounded border border-black/10 object-contain dark:border-white/15"
+            className="h-12 w-12 rounded border border-black/10 object-contain"
           />
         ) : (
-          <div className="h-12 w-12 rounded border border-dashed border-black/20 dark:border-white/20" />
+          <div className="h-12 w-12 rounded border border-dashed border-black/20" />
         )}
         <div className="flex flex-1 flex-col">
           <span className="text-sm font-medium">
             {agent.name ?? "Brand kit not set up yet"}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-zinc-500">
             {agent.brokerage ?? "Add your brokerage, colors, logo, and headshot"}
           </span>
         </div>
         <div className="flex gap-1">
           <span
-            className="h-6 w-6 rounded-full border border-black/10 dark:border-white/15"
+            className="h-6 w-6 rounded-full border border-black/10"
             style={{ backgroundColor: agent.brand_primary_color }}
           />
           <span
-            className="h-6 w-6 rounded-full border border-black/10 dark:border-white/15"
+            className="h-6 w-6 rounded-full border border-black/10"
             style={{ backgroundColor: agent.brand_secondary_color }}
           />
         </div>
         <Link
           href="/dashboard/brand-kit"
-          className="h-9 flex items-center rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+          className="border-brand text-brand flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors hover:bg-black/[.04]"
         >
           Edit brand kit
         </Link>
@@ -66,21 +64,21 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
 
       <Link
         href="/dashboard/listings"
-        className="flex items-center justify-between rounded-lg border border-black/10 p-4 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+        className="flex items-center justify-between rounded-lg border border-black/10 bg-white p-4 text-sm font-medium transition-colors hover:bg-black/[.04]"
       >
         Listings
-        <span className="text-gray-500">&rarr;</span>
+        <span className="text-zinc-400">&rarr;</span>
       </Link>
 
-      <div className="flex flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/15">
+      <div className="flex flex-col gap-4 rounded-lg border border-black/10 bg-white p-4">
         <div className="flex items-center justify-between">
           <div className="text-sm">
             <span className="font-medium">{TIER_LABEL[agent.subscription_tier]}</span>
             {agent.subscription_tier === "free" && (
-              <span className="text-gray-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
+              <span className="text-zinc-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
             )}
             {agent.bonus_listings_remaining > 0 && (
-              <span className="text-gray-500">
+              <span className="text-gold-dark font-medium">
                 {" "}
                 (+{agent.bonus_listings_remaining} bonus)
               </span>
@@ -90,7 +88,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
             <form action="/api/billing/portal" method="post">
               <button
                 type="submit"
-                className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+                className="border-brand text-brand h-9 rounded-full border px-4 text-sm font-medium transition-colors hover:bg-black/[.04]"
               >
                 Manage billing
               </button>
@@ -100,13 +98,13 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
 
         {agent.subscription_tier === "free" && (
           <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {PAID_TIERS.map(({ tier, label, displayPrice }) => (
                 <form key={tier} action="/api/billing/checkout" method="post">
                   <input type="hidden" name="tier" value={tier} />
                   <button
                     type="submit"
-                    className="h-9 rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+                    className="bg-brand hover:bg-brand-dark h-9 rounded-full px-4 text-sm font-medium text-white transition-colors"
                   >
                     Upgrade to {label} ({displayPrice})
                   </button>
@@ -118,11 +116,11 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
               <input
                 name="code"
                 placeholder="Have a code?"
-                className="rounded border border-black/10 px-3 py-2 text-sm dark:border-white/15 dark:bg-black"
+                className="rounded border border-black/10 px-3 py-2 text-sm"
               />
               <button
                 type="submit"
-                className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+                className="border-brand text-brand h-9 rounded-full border px-4 text-sm font-medium transition-colors hover:bg-black/[.04]"
               >
                 Redeem
               </button>

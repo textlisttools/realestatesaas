@@ -15,8 +15,8 @@ export default async function InstagramStoryPreviewPage(
   return (
     <div className="flex flex-col items-center gap-4 p-8">
       <div className="flex w-full max-w-2xl items-center justify-between">
-        <h1 className="text-xl font-semibold">Instagram story preview</h1>
-        <Link href="/dashboard/listings" className="text-sm text-gray-500 hover:underline">
+        <h1 className="text-brand text-xl font-black tracking-tight">Instagram story preview</h1>
+        <Link href="/dashboard/listings" className="hover:text-brand text-sm text-zinc-500">
           Back to listings
         </Link>
       </div>

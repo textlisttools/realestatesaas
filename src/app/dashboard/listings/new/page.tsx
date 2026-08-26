@@ -11,8 +11,7 @@ const STATUS_OPTIONS = [
   { value: "sold", label: "Sold" },
 ];
 
-const inputClass =
-  "rounded border border-black/10 px-3 py-2 text-sm dark:border-white/15 dark:bg-black";
+const inputClass = "rounded border border-black/10 bg-white px-3 py-2 text-sm";
 
 export default async function NewListingPage() {
   const agent = await getOrCreateAgent();
@@ -21,22 +20,23 @@ export default async function NewListingPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">New listing</h1>
-        <Link href="/dashboard/listings" className="text-sm text-gray-500 hover:underline">
+        <h1 className="text-brand text-2xl font-black tracking-tight">New listing</h1>
+        <Link href="/dashboard/listings" className="hover:text-brand text-sm text-zinc-500">
           Back to listings
         </Link>
       </div>
 
       {!hasQuota && (
-        <div className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm dark:border-white/15">
+        <div className="flex flex-col gap-3 rounded-lg border border-black/10 bg-white p-4 text-sm">
           <p>
             Free plan is limited to {FREE_TIER_LISTING_LIMIT} listings/month. Upgrade to Pro
             for unlimited listings.
           </p>
           <form action="/api/billing/checkout" method="post">
+            <input type="hidden" name="tier" value="pro" />
             <button
               type="submit"
-              className="h-9 w-fit rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              className="bg-brand hover:bg-brand-dark h-9 w-fit rounded-full px-4 text-sm font-medium text-white transition-colors"
             >
               Upgrade to Pro
             </button>
@@ -112,7 +112,7 @@ export default async function NewListingPage() {
         <label className="flex flex-col gap-2 text-sm">
           Photos
           <input name="photos" type="file" accept="image/*" multiple />
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-zinc-500">
             The first photo you select is used as the hero image.
           </span>
         </label>
@@ -120,7 +120,7 @@ export default async function NewListingPage() {
         <button
           type="submit"
           disabled={!hasQuota}
-          className="h-11 w-fit rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-40 dark:hover:bg-[#ccc]"
+          className="bg-brand hover:bg-brand-dark h-11 w-fit rounded-full px-6 text-sm font-medium text-white transition-colors disabled:opacity-40"
         >
           Save listing
         </button>

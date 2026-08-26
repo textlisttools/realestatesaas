@@ -60,13 +60,19 @@ export default function Home() {
           Real Estate Marketing Kit
         </span>
         <Show when="signed-out">
-          <Link href="/sign-in" className="text-sm font-medium text-black hover:underline">
+          <Link
+            href="/sign-in"
+            className="hover:text-brand text-sm font-medium text-black transition-colors"
+          >
             Sign in
           </Link>
         </Show>
         <Show when="signed-in">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm font-medium text-black hover:underline">
+            <Link
+              href="/dashboard"
+              className="hover:text-brand text-sm font-medium text-black transition-colors"
+            >
               Dashboard
             </Link>
             <UserButton />
