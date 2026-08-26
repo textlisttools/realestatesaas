@@ -17,6 +17,7 @@ export type Agent = {
   stripe_customer_id: string | null;
   subscription_tier: SubscriptionTier;
   bonus_listings_remaining: number;
+  retention_code_sent_at: string | null;
   created_at: string;
 };
 

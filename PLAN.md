@@ -413,11 +413,36 @@ calling a route daily that finds free-tier agents whose `created_at` is
 `retention_code_sent_at` column to track that) to send `WELCOME10` (or a
 freshly-generated per-agent code, if you'd rather each agent get a unique
 one). Redeeming still works right now by just handing someone the code
-directly. Same pattern as every other third-party integration in this
-project: tell me which email provider you want and I'll build the send +
-scheduling once you have an account for it.
+directly.
 
-**Not verified — same Stripe gap as step 8, now also needs the second
-Price**: create a second recurring Price in the Stripe Dashboard for
-Premium ($49) alongside the Pro one, and send me its id for
-`NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM`.
+**Now built — Resend chosen for the retention email.**
+`supabase/migrations/20260829000000_retention_email_tracking.sql` adds
+`agents.retention_code_sent_at`. `src/app/api/cron/retention-email/route.ts`
+runs daily via Vercel Cron (`vercel.json`, `0 13 * * *` — 1pm UTC), finds
+free-tier agents with an email, no `retention_code_sent_at`, and
+`created_at` ≥14 days ago, emails each the `WELCOME10` code via Resend, and
+only marks `retention_code_sent_at` on an actually-successful send (so a
+transient Resend failure retries the next day instead of being silently
+skipped forever). Guarded by `CRON_SECRET` — Vercel sends
+`Authorization: Bearer $CRON_SECRET` automatically on cron-triggered
+requests; anything else gets a 401, confirmed via `npm run dev` with a
+temporary local secret (wrong bearer → 401, correct bearer → passes through
+to the next real check). All qualifying agents currently share the one
+seeded code rather than getting a unique one each — simpler, and the
+`agent_redemptions` unique constraint already stops any single agent from
+redeeming it twice, so nothing about correctness depends on the codes being
+distinct.
+
+**Not verified — needs real accounts for both**:
+1. Stripe: create a second recurring Price in the Stripe Dashboard for
+   Premium ($49) alongside the existing Pro one, and send me its id for
+   `NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM`.
+2. Resend: sign up, verify a sending domain (Resend rejects sending to
+   arbitrary recipients from an unverified domain — the shared
+   `onboarding@resend.dev` sender only delivers to your own account email,
+   not to real agents), and send `RESEND_API_KEY` +
+   `RESEND_FROM_EMAIL` (e.g. `Real Estate Marketing Kit
+   <hello@yourdomain.com>`). Also needs `CRON_SECRET` (any random string
+   you generate) — set the same value in Vercel's env vars once; Vercel's
+   Cron infrastructure sends it automatically after that, no dashboard
+   toggle required beyond having `vercel.json` deployed.
