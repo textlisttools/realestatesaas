@@ -140,7 +140,24 @@ create table generated_assets (
       removed `<SignedIn>`/`<SignedOut>`/`<Protect>` in favor of a single
       async server `<Show when="signed-in" | "signed-out">` component —
       used that instead on the home page.
-- [ ] Step 3: Brand kit onboarding
+- [x] Step 3: Brand kit onboarding built at `/dashboard/brand-kit` —
+      name/brokerage/phone fields, primary/secondary color pickers, a font
+      picker (Inter/Playfair Display/Montserrat/Roboto Slab), and
+      logo/headshot upload (5MB cap, `image/*` only). Uploads go through a
+      server action (`src/app/dashboard/brand-kit/actions.ts`) using the
+      service-role client — never a direct client-side upload with the
+      anon key — so no Storage RLS policies were needed. Files land in a
+      new public `brand-assets` Storage bucket
+      (`supabase/migrations/20260826010000_brand_assets_bucket.sql`,
+      public read so Puppeteer can fetch them by URL later; writes are
+      service-role only) under `${agentId}/logo-*`/`headshot-*`. Dashboard
+      now shows a brand-kit summary card (logo, name, brokerage, color
+      swatches) with an edit link. **Needs the bucket migration run** —
+      same SQL Editor path as the initial schema — before uploads will
+      work; build/lint/typecheck pass and `/dashboard/brand-kit` correctly
+      redirects to sign-in when unauthenticated, but the actual
+      upload → Storage → `agents` row flow still needs a real browser
+      click-through plus that bucket existing.
 - [ ] Step 4: Listing form + photo upload
 - [ ] Step 5: Template components
 - [ ] Step 6: Puppeteer render pipeline
