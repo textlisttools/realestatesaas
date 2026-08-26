@@ -433,16 +433,27 @@ seeded code rather than getting a unique one each — simpler, and the
 redeeming it twice, so nothing about correctness depends on the codes being
 distinct.
 
-**Not verified — needs real accounts for both**:
-1. Stripe: create a second recurring Price in the Stripe Dashboard for
-   Premium ($49) alongside the existing Pro one, and send me its id for
-   `NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM`.
-2. Resend: sign up, verify a sending domain (Resend rejects sending to
-   arbitrary recipients from an unverified domain — the shared
-   `onboarding@resend.dev` sender only delivers to your own account email,
-   not to real agents), and send `RESEND_API_KEY` +
-   `RESEND_FROM_EMAIL` (e.g. `Real Estate Marketing Kit
-   <hello@yourdomain.com>`). Also needs `CRON_SECRET` (any random string
-   you generate) — set the same value in Vercel's env vars once; Vercel's
-   Cron infrastructure sends it automatically after that, no dashboard
-   toggle required beyond having `vercel.json` deployed.
+**Stripe: live and confirmed end-to-end.** All four env vars
+(`STRIPE_SECRET_KEY`, both price IDs, `STRIPE_WEBHOOK_SECRET`) added to
+Vercel and redeployed. Hit one real snag getting there: `STRIPE_SECRET_KEY`
+kept saving with a corrupted value through several rounds of mobile
+copy/paste/retype (Vercel's own logs showed `Invalid API Key provided`),
+fixed by re-copying it fresh from the Stripe Dashboard's copy-icon button
+rather than manual text selection. After that, full test purchase
+(`4242 4242 4242 4242`) confirmed: Checkout session created correctly,
+redirected to `checkout.stripe.com`, payment completed, redirected back to
+`/dashboard?upgraded=1`, and the webhook fired and flipped the dashboard's
+plan badge to "Pro plan" on refresh — the one piece (webhook delivery →
+`subscription_tier` sync) that genuinely could not be verified any other
+way, since it requires a real Stripe account round-tripping to a real
+deployed URL.
+
+**Still not verified — Resend not set up yet**: sign up, verify a sending
+domain (Resend rejects sending to arbitrary recipients from an unverified
+domain — the shared `onboarding@resend.dev` sender only delivers to your
+own account email, not to real agents), and send `RESEND_API_KEY` +
+`RESEND_FROM_EMAIL` (e.g. `Real Estate Marketing Kit
+<hello@yourdomain.com>`). Also needs `CRON_SECRET` (any random string you
+generate) — set the same value in Vercel's env vars once; Vercel's Cron
+infrastructure sends it automatically after that, no dashboard toggle
+required beyond having `vercel.json` deployed.
