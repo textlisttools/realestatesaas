@@ -152,12 +152,9 @@ create table generated_assets (
       public read so Puppeteer can fetch them by URL later; writes are
       service-role only) under `${agentId}/logo-*`/`headshot-*`. Dashboard
       now shows a brand-kit summary card (logo, name, brokerage, color
-      swatches) with an edit link. **Needs the bucket migration run** —
-      same SQL Editor path as the initial schema — before uploads will
-      work; build/lint/typecheck pass and `/dashboard/brand-kit` correctly
-      redirects to sign-in when unauthenticated, but the actual
-      upload → Storage → `agents` row flow still needs a real browser
-      click-through plus that bucket existing.
+      swatches) with an edit link. **Live and confirmed end-to-end** —
+      bucket migration run, logo uploaded and name/brokerage/colors saved
+      through the deployed Vercel URL, dashboard card renders it correctly.
 - [ ] Step 4: Listing form + photo upload
 - [ ] Step 5: Template components
 - [ ] Step 6: Puppeteer render pipeline
