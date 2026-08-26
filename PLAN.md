@@ -131,12 +131,12 @@ create table generated_assets (
       `agents` row for the signed-in Clerk user — called from
       `/dashboard`, so the row is created on first authenticated visit
       rather than via a webhook (no public URL to receive one in this
-      sandbox). Verified locally: build is clean, and `npm run dev` here
-      confirmed `/` renders signed-out state, `/dashboard` redirects to
-      `/sign-in` when unauthenticated, and `/sign-in` renders Clerk's
-      widget — full sign-up → dashboard → agent-row-created flow still
-      needs a real browser click-through (can't drive Clerk's hosted UI
-      from curl). Note: installed `@clerk/nextjs` is v7 ("Core 3"), which
+      sandbox). **Live and confirmed end-to-end** — deployed to Vercel
+      (user is on mobile, no local Node.js available) with the six env
+      vars set, signed up through the deployed URL in Safari, and
+      confirmed the new user shows up in Clerk Dashboard → Users and the
+      matching row shows up in Supabase → `agents`. Note: installed
+      `@clerk/nextjs` is v7 ("Core 3"), which
       removed `<SignedIn>`/`<SignedOut>`/`<Protect>` in favor of a single
       async server `<Show when="signed-in" | "signed-out">` component —
       used that instead on the home page.
