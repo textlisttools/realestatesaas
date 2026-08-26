@@ -53,10 +53,10 @@ function XCircleIcon() {
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col bg-white">
+    <div className="bg-cream flex flex-1 flex-col">
       {/* Top nav */}
       <header className="flex items-center justify-between px-6 py-5 sm:px-12">
-        <span className="text-lg font-black tracking-tight text-black">
+        <span className="text-brand text-lg font-black tracking-tight">
           Real Estate Marketing Kit
         </span>
         <Show when="signed-out">
@@ -82,7 +82,7 @@ export default function Home() {
 
         <h1 className="max-w-4xl text-[2.75rem] leading-[1.05] font-black tracking-tight text-black sm:text-6xl sm:leading-[1.05]">
           Turn every listing into a{" "}
-          <span className="text-brand italic">marketing kit</span> — before
+          <span className="text-gold-dark italic">marketing kit</span> — before
           you&apos;ve left the driveway.
         </h1>
 
@@ -114,7 +114,7 @@ export default function Home() {
       </section>
 
       {/* Problem / agitation */}
-      <section className="bg-black px-6 py-24 text-center sm:px-12">
+      <section className="bg-brand px-6 py-24 text-center sm:px-12">
         <h2 className="mx-auto max-w-3xl text-3xl leading-tight font-black text-white sm:text-5xl">
           You&apos;ve got the listing. You don&apos;t have the afternoon.
         </h2>
@@ -122,7 +122,7 @@ export default function Home() {
         <div className="mx-auto mt-16 flex max-w-2xl flex-col gap-10">
           {PAIN_POINTS.map((point) => (
             <div key={point} className="flex flex-col items-center gap-4">
-              <span className="text-brand">
+              <span className="text-gold">
                 <XCircleIcon />
               </span>
               <p className="text-xl font-medium text-white sm:text-2xl">{point}</p>
@@ -139,7 +139,7 @@ export default function Home() {
       {/* How it works */}
       <section className="px-6 py-24 sm:px-12">
         <div className="mx-auto max-w-2xl">
-          <span className="text-brand text-sm font-bold tracking-widest">
+          <span className="text-gold-dark text-sm font-bold tracking-widest">
             HOW IT WORKS
           </span>
           <h2 className="mt-3 text-3xl leading-tight font-black text-black sm:text-5xl">
@@ -156,7 +156,7 @@ export default function Home() {
                   <span className="mt-2 w-px flex-1 bg-black/10 last:hidden" />
                 </div>
                 <div className="pb-2">
-                  <span className="text-brand text-xs font-bold tracking-widest">
+                  <span className="text-gold-dark text-xs font-bold tracking-widest">
                     {step.eyebrow}
                   </span>
                   <h3 className="mt-2 text-2xl font-bold text-black">{step.title}</h3>
@@ -176,7 +176,7 @@ export default function Home() {
         <Show when="signed-out">
           <Link
             href="/sign-up"
-            className="flex h-14 items-center gap-2 rounded-full bg-white px-8 text-base font-bold text-black transition-colors hover:bg-zinc-100"
+            className="text-brand flex h-14 items-center gap-2 rounded-full bg-white px-8 text-base font-bold transition-colors hover:bg-zinc-100"
           >
             Get Started Free
             <ArrowIcon />
@@ -185,7 +185,7 @@ export default function Home() {
         <Show when="signed-in">
           <Link
             href="/dashboard"
-            className="flex h-14 items-center gap-2 rounded-full bg-white px-8 text-base font-bold text-black transition-colors hover:bg-zinc-100"
+            className="text-brand flex h-14 items-center gap-2 rounded-full bg-white px-8 text-base font-bold transition-colors hover:bg-zinc-100"
           >
             Go to Dashboard
             <ArrowIcon />

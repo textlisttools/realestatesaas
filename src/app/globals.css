@@ -8,8 +8,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand: #e8541e;
-  --color-brand-dark: #c2410c;
+  --color-brand: #1a2b4c;
+  --color-brand-dark: #10192f;
+  --color-gold: #c9a86a;
+  --color-gold-dark: #a9884f;
+  --color-cream: #f7f3ec;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

@@ -453,7 +453,49 @@ domain (Resend rejects sending to arbitrary recipients from an unverified
 domain — the shared `onboarding@resend.dev` sender only delivers to your
 own account email, not to real agents), and send `RESEND_API_KEY` +
 `RESEND_FROM_EMAIL` (e.g. `Real Estate Marketing Kit
-<hello@yourdomain.com>`). Also needs `CRON_SECRET` (any random string you
-generate) — set the same value in Vercel's env vars once; Vercel's Cron
-infrastructure sends it automatically after that, no dashboard toggle
-required beyond having `vercel.json` deployed.
+<hello@yourdomain.com>`). `CRON_SECRET` was generated (not from a
+third-party account, just a random string both sides need to agree on) and
+handed over; user is holding off on the domain/Resend signup for now, no
+urgency.
+
+## Follow-up: landing page redesign
+
+Requested after everything above shipped: restyle `/` (the marketing home
+page) to look like a polished SaaS landing page, referencing
+iHomefinder.com's agent-marketing-platform page as a structural example —
+bold italic-accent headline, dark high-contrast "problem" section with
+X-marked pain points, numbered "how it works" section, orange-accented pill
+buttons. Rebuilt `src/app/page.tsx` with that structure but original copy
+grounded in what this product actually does (brand kit → listing → flyer/
+social generation), not the reference site's copy.
+
+Then asked to drop the orange (oversaturated in real estate tech — RE/MAX,
+Keller Williams, Redfin, iHomefinder itself all live there) for something
+that reads well specifically for real estate. Went with **deep navy
+(`#1a2b4c`) + warm gold (`#c9a86a`, `#a9884f` for on-light text) + a warm
+cream background (`#f7f3ec`)** instead of stark white — navy reads as
+trust/stability (the psychologically load-bearing color for a purchase
+this size), gold signals warmth/quality without being flashy, and the
+combination happens to be exactly `agents.brand_primary_color`/
+`brand_secondary_color`'s schema defaults from step 1, so the marketing
+site now previews the same palette a new agent's own brand kit starts
+with — free cohesion. Also, not coincidentally, this is close to Sotheby's
+International Realty's real branding (navy/cream/gold), a well-established
+combination in the luxury real estate segment specifically. Colors live as
+CSS custom properties in `globals.css` (`--color-brand`, `--color-gold`,
+`--color-gold-dark`, `--color-cream`, Tailwind v4 `@theme` block), reused
+across buttons, the two navy sections (bookending the page), and gold
+accents (italic hero word, eyebrow labels, icons).
+
+**On verification**: this app's pages can't be screenshotted locally at
+all — `clerkMiddleware` (`src/proxy.ts`) hits Clerk's API on every request
+regardless of the page, and this sandbox blocks that domain; confirmed
+this isn't page-specific by temporarily stripping `ClerkProvider` out of
+the root layout for a scratch test and seeing the identical block, then
+reverting it exactly. Given that, verified the actual color *combination*
+a different way: built a standalone static HTML file with the same hex
+values and layout shape (no Next.js, no Clerk, nothing this sandbox's
+network policy touches) and screenshotted that directly — confirms the
+palette itself reads as intended (contrast holds on all the text/background
+pairings used) without confirming pixel-exact output of the real page,
+which still needs a look on the actual deployment.
