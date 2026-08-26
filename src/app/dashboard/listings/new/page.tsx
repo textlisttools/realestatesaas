@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
+import { getOrCreateAgent } from "@/lib/agents";
+import { hasListingQuota } from "@/lib/quota";
+import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
 import { createListing } from "./actions";
 
 const STATUS_OPTIONS = [
@@ -13,7 +15,8 @@ const inputClass =
   "rounded border border-black/10 px-3 py-2 text-sm dark:border-white/15 dark:bg-black";
 
 export default async function NewListingPage() {
-  await auth.protect();
+  const agent = await getOrCreateAgent();
+  const hasQuota = await hasListingQuota(agent);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-8">
@@ -24,7 +27,27 @@ export default async function NewListingPage() {
         </Link>
       </div>
 
-      <form action={createListing} className="flex flex-col gap-6">
+      {!hasQuota && (
+        <div className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm dark:border-white/15">
+          <p>
+            Free plan is limited to {FREE_TIER_LISTING_LIMIT} listings/month. Upgrade to Pro
+            for unlimited listings.
+          </p>
+          <form action="/api/billing/checkout" method="post">
+            <button
+              type="submit"
+              className="h-9 w-fit rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            >
+              Upgrade to Pro
+            </button>
+          </form>
+        </div>
+      )}
+
+      <form
+        action={createListing}
+        className={`flex flex-col gap-6 ${!hasQuota ? "pointer-events-none opacity-40" : ""}`}
+      >
         <label className="flex flex-col gap-1 text-sm">
           Address
           <input name="address" required className={inputClass} />
@@ -96,7 +119,8 @@ export default async function NewListingPage() {
 
         <button
           type="submit"
-          className="h-11 w-fit rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          disabled={!hasQuota}
+          className="h-11 w-fit rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-40 dark:hover:bg-[#ccc]"
         >
           Save listing
         </button>

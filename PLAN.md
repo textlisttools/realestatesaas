@@ -325,6 +325,37 @@ create table generated_assets (
       `SharedArrayBuffer`-backed), fixed with one documented cast, not a
       runtime bug. Build/lint/typecheck pass; confirmed via `npm run dev`
       that both new/changed routes correctly redirect to `/sign-in` when
-      signed out. Actual zip contents and thumbnail rendering with real
-      generated assets still need a real browser look.
-- [ ] Step 8: Stripe integration
+      signed out. **Live and confirmed** — thumbnails render correctly and
+      the zip download works through the deployed Vercel URL.
+- [x] Step 8: Stripe subscriptions built: `/api/billing/checkout` creates a
+      Stripe customer on first use (saved to `agents.stripe_customer_id`)
+      and a subscription Checkout session for
+      `NEXT_PUBLIC_STRIPE_PRICE_ID_PRO`; `/api/billing/portal` opens
+      Stripe's hosted billing portal for managing/canceling;
+      `/api/billing/webhook` verifies the Stripe signature against the raw
+      request body and syncs `agents.subscription_tier` from
+      `customer.subscription.{created,updated,deleted}` events (`active`/
+      `trialing` → `pro`, everything else → `free`). Free tier is capped
+      at `FREE_TIER_LISTING_LIMIT = 3` listings/month
+      (`src/lib/quota.ts#hasListingQuota`, counts listings created since
+      the start of the current UTC calendar month) — enforced twice: the
+      "New listing" page hides/disables the form and shows an upgrade
+      prompt when quota is hit, and `createListing` re-checks server-side
+      as the actual enforcement point (the page-level hiding is only a
+      convenience, not the security boundary). Dashboard shows current
+      plan + an Upgrade/Manage billing button.
+
+      Caught a real bug while smoke-testing: the checkout route checked
+      `NEXT_PUBLIC_STRIPE_PRICE_ID_PRO` before calling `getOrCreateAgent()`,
+      so an unauthenticated POST got a raw 500 instead of a sign-in
+      redirect — config problems shouldn't be checked before auth.
+      Reordered; confirmed via `npm run dev` that `/api/billing/checkout`,
+      `/api/billing/portal`, and `/dashboard/listings/new` all now
+      correctly redirect signed-out requests to `/sign-in`.
+
+      **Not verified — no Stripe account connected in this session**: the
+      actual checkout flow, webhook delivery, and subscription_tier sync
+      all need real Stripe test-mode keys plus a Price ID (create a
+      recurring Price in the Stripe Dashboard) and a webhook endpoint
+      pointed at the deployed URL's `/api/billing/webhook`, listening for
+      `customer.subscription.created`, `.updated`, and `.deleted`.

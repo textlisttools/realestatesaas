@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getOrCreateAgent } from "@/lib/agents";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { uploadListingPhoto } from "@/lib/supabase/storage";
+import { hasListingQuota } from "@/lib/quota";
+import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
 import type { ListingStatus } from "@/lib/supabase/types";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -25,6 +27,14 @@ function readNumber(formData: FormData, key: string): number | null {
 
 export async function createListing(formData: FormData) {
   const agent = await getOrCreateAgent();
+
+  // Defensive re-check even though the page itself hides the form once the
+  // quota is hit — this is the actual enforcement point.
+  if (!(await hasListingQuota(agent))) {
+    throw new Error(
+      `Free plan is limited to ${FREE_TIER_LISTING_LIMIT} listings/month. Upgrade to Pro for unlimited listings.`
+    );
+  }
 
   const address = readString(formData, "address");
   if (!address) throw new Error("Address is required");

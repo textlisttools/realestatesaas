@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { getOrCreateAgent } from "@/lib/agents";
+import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
 
 export default async function DashboardPage() {
   const agent = await getOrCreateAgent();
@@ -59,6 +60,36 @@ export default async function DashboardPage() {
         Listings
         <span className="text-gray-500">&rarr;</span>
       </Link>
+
+      <div className="flex items-center justify-between rounded-lg border border-black/10 p-4 text-sm dark:border-white/15">
+        <div>
+          <span className="font-medium">
+            {agent.subscription_tier === "pro" ? "Pro plan" : "Free plan"}
+          </span>
+          {agent.subscription_tier === "free" && (
+            <span className="text-gray-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
+          )}
+        </div>
+        {agent.subscription_tier === "pro" ? (
+          <form action="/api/billing/portal" method="post">
+            <button
+              type="submit"
+              className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+            >
+              Manage billing
+            </button>
+          </form>
+        ) : (
+          <form action="/api/billing/checkout" method="post">
+            <button
+              type="submit"
+              className="h-9 rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            >
+              Upgrade to Pro
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
