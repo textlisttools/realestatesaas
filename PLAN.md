@@ -182,6 +182,9 @@ create table generated_assets (
       out, deprecation warning gone. Build/lint/typecheck pass; the actual
       create-listing → photos-in-Storage → `listing_photos` rows flow
       still needs a real browser click-through plus that bucket existing.
+      **Live and confirmed** — bucket migration run, listing created with
+      photos through the deployed Vercel URL, shows up correctly on
+      `/dashboard/listings`.
 - [ ] Step 5: Template components
 - [ ] Step 6: Puppeteer render pipeline
 - [ ] Step 7: Dashboard
