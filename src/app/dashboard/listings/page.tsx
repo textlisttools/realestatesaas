@@ -50,11 +50,11 @@ export default async function ListingsPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {listings.map((listing) => (
-            <li
-              key={listing.id}
-              className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 dark:border-white/15"
-            >
-              <div className="flex items-center justify-between">
+            <li key={listing.id}>
+              <Link
+                href={`/dashboard/listings/${listing.id}`}
+                className="flex items-center justify-between rounded-lg border border-black/10 p-4 transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+              >
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{listing.address}</span>
                   <span className="text-xs text-gray-500">
@@ -68,27 +68,7 @@ export default async function ListingsPage() {
                     {STATUS_LABEL[listing.status] ?? listing.status}
                   </span>
                 </div>
-              </div>
-              <div className="flex gap-2 text-xs">
-                <Link
-                  href={`/dashboard/listings/${listing.id}/flyer`}
-                  className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
-                >
-                  Flyer
-                </Link>
-                <Link
-                  href={`/dashboard/listings/${listing.id}/ig-post`}
-                  className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
-                >
-                  IG post
-                </Link>
-                <Link
-                  href={`/dashboard/listings/${listing.id}/ig-story`}
-                  className="rounded-full border border-black/10 px-3 py-1 hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
-                >
-                  IG story
-                </Link>
-              </div>
+              </Link>
             </li>
           ))}
         </ul>

@@ -1,4 +1,3 @@
-import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 const BRAND_ASSETS_BUCKET = "brand-assets";

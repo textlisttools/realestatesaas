@@ -1,4 +1,3 @@
-import "server-only";
 import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import type { Agent, Listing, ListingPhoto } from "@/lib/supabase/types";
@@ -9,11 +8,16 @@ export type ListingWithPhotos = {
   photos: ListingPhoto[];
 };
 
-/** Scoped to `agent.id` so one agent can never load another's listing by guessing an id. */
-export async function getListingForAgent(
+/**
+ * Scoped to `agent.id` so one agent can never load another's listing by
+ * guessing an id. Returns null rather than 404ing so it works from both
+ * App Router pages (via getListingForAgent below) and the Pages Router API
+ * route that Puppeteer rendering has to live in (see src/lib/render).
+ */
+export async function findListingForAgent(
   listingId: string,
   agentId: string
-): Promise<ListingWithPhotos> {
+): Promise<ListingWithPhotos | null> {
   const supabase = createServiceRoleClient();
 
   const { data: listing, error: listingError } = await supabase
@@ -24,7 +28,7 @@ export async function getListingForAgent(
     .maybeSingle();
 
   if (listingError) throw listingError;
-  if (!listing) notFound();
+  if (!listing) return null;
 
   const { data: photos, error: photosError } = await supabase
     .from("listing_photos")
@@ -35,6 +39,16 @@ export async function getListingForAgent(
   if (photosError) throw photosError;
 
   return { listing, photos: photos ?? [] };
+}
+
+/** App Router pages only — 404s via next/navigation if the listing isn't found/owned. */
+export async function getListingForAgent(
+  listingId: string,
+  agentId: string
+): Promise<ListingWithPhotos> {
+  const result = await findListingForAgent(listingId, agentId);
+  if (!result) notFound();
+  return result;
 }
 
 export function toTemplateData(agent: Agent, { listing, photos }: ListingWithPhotos): TemplateData {

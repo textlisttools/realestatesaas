@@ -12,6 +12,19 @@ export function fontStack(fontChoice: string): string {
   return FONT_STACKS[fontChoice] ?? FONT_STACKS.inter;
 }
 
+const GOOGLE_FONTS_FAMILY: Record<string, string> = {
+  inter: "Inter:wght@400;600;700",
+  playfair: "Playfair+Display:wght@400;600;700",
+  montserrat: "Montserrat:wght@400;600;700",
+  "roboto-slab": "Roboto+Slab:wght@400;600;700",
+};
+
+/** Used only by the Puppeteer render pipeline, which sets raw HTML without Next's font optimization. */
+export function googleFontsHref(fontChoice: string): string {
+  const family = GOOGLE_FONTS_FAMILY[fontChoice] ?? GOOGLE_FONTS_FAMILY.inter;
+  return `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
+}
+
 export function formatPrice(price: number | null): string {
   if (price === null) return "Price upon request";
   return new Intl.NumberFormat("en-US", {

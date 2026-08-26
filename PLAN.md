@@ -216,6 +216,72 @@ create table generated_assets (
       look — nothing to verify differently here since these are pure
       presentational components with no separate "live" step, unlike
       earlier steps that needed a bucket or schema to exist first.
-- [ ] Step 6: Puppeteer render pipeline
+- [x] Step 6: Puppeteer render pipeline built and **verified locally with a
+      real headless Chromium** (this environment has one preinstalled for
+      Playwright at `/opt/pw-browsers/chromium`; setting
+      `PUPPETEER_EXECUTABLE_PATH` to it made `launchBrowser()` use it
+      instead of `@sparticuz/chromium`, which needs a real serverless
+      environment to test). All three templates rendered to files with
+      byte-exact target pixel dimensions (2550×3300, 1080×1080, 1080×1920,
+      confirmed via PNG header inspection) and visually inspected — layout,
+      colors, and text all correct; the flyer PDF opened as a valid single
+      US-Letter page. `src/lib/render/`: `browser.ts` picks
+      `PUPPETEER_EXECUTABLE_PATH` if set, else `@sparticuz/chromium`
+      (untested here — no serverless env available — this is the one part
+      of step 6 that can only really be confirmed on Vercel);
+      `renderElement.ts` renders a template to HTML (Google Fonts link +
+      minimal reset) and screenshots it at exact size, waiting for all
+      `<img>` elements to finish loading first; `pdf.ts` wraps the flyer
+      PNG into a true 8.5×11in `pdf-lib` PDF rather than trusting
+      Puppeteer's own `page.pdf()`, which maps CSS px to physical units at
+      96dpi regardless of viewport size and so can't produce a real 300dpi
+      page from a 2550×3300 viewport; `generateAssets.ts` orchestrates all
+      three renders + uploads to a new public `generated-assets` bucket
+      (`supabase/migrations/20260826030000_generated_assets_bucket.sql`)
+      + writes the three `generated_assets` rows.
+
+      **Structural surprise, not a bug in the render logic**: this pipeline
+      cannot be reached from the App Router at all. `generateListingAssets`
+      needs `react-dom/server` to turn a template component into an HTML
+      string for Puppeteer, and Next.js forces a `react-server` module
+      resolution condition on every file reachable from `src/app` —
+      including Route Handlers, not just Server Components/Actions — which
+      makes every `react-dom/server` entry point unusable there (confirmed
+      by trying the plain import, the modern `renderToReadableStream`
+      streaming API, and a `react-dom/server.node` subpath import — all
+      three fail the same way once actually resolved). The supported
+      escape hatch is a Pages Router API route, which is a separate module
+      graph and isn't subject to that condition; Next.js fully supports
+      Pages and App Router coexisting. So the "Generate assets" button on
+      `/dashboard/listings/[id]` is a plain HTML `<form action="/api/
+      listings/[id]/generate-assets" method="post">` — not a Server Action
+      — posting to `src/pages/api/listings/[id]/generate-assets.ts`. That
+      route can't use `auth()`/`currentUser()` (App Router-only), so
+      `src/lib/agents.ts` gained `getOrCreateAgentForClerkUser(clerkUserId)`
+      alongside the existing `getOrCreateAgent()`, using Clerk's Pages
+      Router-compatible `getAuth(req)` instead; `src/lib/listings.ts`
+      similarly gained `findListingForAgent()` (returns null) alongside
+      `getListingForAgent()` (App Router only, 404s via `next/navigation`).
+      One more layer to this: `server-only` (used to guard
+      `createServiceRoleClient` etc. against accidental client-bundle
+      inclusion) turned out to unconditionally throw under the Pages
+      Router too — Next only turns it into a no-op within the App Router
+      compiler layer. Since `agents.ts`, `listings.ts`, and everything
+      under `render/` are now reachable from both routers, the guard had
+      to come out of those specific files; Next's separate, always-on
+      stripping of non-`NEXT_PUBLIC_*` env vars from client bundles still
+      prevents the service-role key from actually leaking, so this trades
+      away an early build-time guard, not real protection. Verified via
+      `npm run dev`: the listing detail page still redirects to
+      `/sign-in` when signed out, and posting to the API route
+      unauthenticated now correctly returns `401 {"error": "Not
+      authenticated"}` instead of crashing.
+
+      **Still unverified**: the real Supabase Storage upload + `INSERT
+      INTO generated_assets` (network-blocked here, same as every other
+      step), and `@sparticuz/chromium` actually launching on Vercel's
+      serverless runtime — needs the bucket migration run, then a real
+      click through "Generate assets" on a deployed listing with actual
+      photos.
 - [ ] Step 7: Dashboard
 - [ ] Step 8: Stripe integration
