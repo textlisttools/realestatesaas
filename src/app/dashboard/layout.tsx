@@ -10,6 +10,12 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
         </Link>
         <div className="flex items-center gap-6">
           <Link
+            href="/"
+            className="hover:text-brand text-sm font-medium text-black transition-colors"
+          >
+            Home
+          </Link>
+          <Link
             href="/dashboard/listings"
             className="hover:text-brand text-sm font-medium text-black transition-colors"
           >

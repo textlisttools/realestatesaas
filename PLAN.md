@@ -549,3 +549,15 @@ page still does, unchanged). Same screenshot limitation as before: needs a
 look on the real deployment to confirm the actual rendered pages, though
 the color/contrast choices themselves were already validated via the
 earlier static-HTML mockup.
+
+## Follow-up: link back to the main page from everywhere
+
+Added a "Home" link (→ `/`, the marketing page) to the shared dashboard
+nav (`src/app/dashboard/layout.tsx`, alongside Listings/Brand kit) —
+covers every `/dashboard/*` route including the template previews, since
+they all inherit that layout already. `/sign-in` and `/sign-up` had zero
+navigation before this (just the centered Clerk widget), so gave both a
+small header with the wordmark linking to `/`, matching the dashboard's
+header style. Build/lint/typecheck pass; confirmed via `npm run dev` that
+`/sign-in` renders with the new header (`href="/"` present in the HTML)
+and auth protection on `/dashboard` is unaffected.
