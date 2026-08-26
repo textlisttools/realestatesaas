@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, tierForPriceId } from "@/lib/stripe";
 
 const ACTIVE_STATUSES: Stripe.Subscription.Status[] = ["active", "trialing"];
 
@@ -38,7 +38,11 @@ export async function POST(request: NextRequest) {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId =
       typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-    const tier = ACTIVE_STATUSES.includes(subscription.status) ? "pro" : "free";
+
+    const priceId = subscription.items.data[0]?.price.id;
+    const tier = ACTIVE_STATUSES.includes(subscription.status) && priceId
+      ? tierForPriceId(priceId)
+      : "free";
 
     const supabase = createServiceRoleClient();
     const { error } = await supabase

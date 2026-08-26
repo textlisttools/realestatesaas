@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getOrCreateAgent } from "@/lib/agents";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { uploadListingPhoto } from "@/lib/supabase/storage";
-import { hasListingQuota } from "@/lib/quota";
+import { consumeListingQuota } from "@/lib/quota";
 import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
 import type { ListingStatus } from "@/lib/supabase/types";
 
@@ -28,11 +28,12 @@ function readNumber(formData: FormData, key: string): number | null {
 export async function createListing(formData: FormData) {
   const agent = await getOrCreateAgent();
 
-  // Defensive re-check even though the page itself hides the form once the
-  // quota is hit — this is the actual enforcement point.
-  if (!(await hasListingQuota(agent))) {
+  // The actual enforcement point (the page only hides the form as a
+  // convenience) — also atomically spends a bonus listing here if the
+  // agent is over their monthly free limit but has redeemed bonus ones.
+  if (!(await consumeListingQuota(agent))) {
     throw new Error(
-      `Free plan is limited to ${FREE_TIER_LISTING_LIMIT} listings/month. Upgrade to Pro for unlimited listings.`
+      `Free plan is limited to ${FREE_TIER_LISTING_LIMIT} listings/month. Redeem a code or upgrade to Pro/Premium for more.`
     );
   }
 

@@ -359,3 +359,65 @@ create table generated_assets (
       recurring Price in the Stripe Dashboard) and a webhook endpoint
       pointed at the deployed URL's `/api/billing/webhook`, listening for
       `customer.subscription.created`, `.updated`, and `.deleted`.
+
+## Follow-up: three tiers + trial-extension codes
+
+Requested after step 8 landed: free / Pro ($29) / Premium ($49), plus a
+redeemable code that credits 10 bonus listings to a free-tier agent (meant
+to be emailed ~2 weeks after signup to nudge still-free users toward
+converting).
+
+- `SubscriptionTier` is now `"free" | "pro" | "premium"`.
+  `src/lib/stripe.ts#PAID_TIERS` lists both paid tiers with their own price
+  env vars (`NEXT_PUBLIC_STRIPE_PRICE_ID_PRO`,
+  `NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM`); the checkout route now takes a
+  `tier` field (dashboard posts it as a hidden input, one button per tier)
+  and the webhook resolves which tier a subscription is on by matching its
+  Stripe price id back to one of those two env vars, rather than assuming
+  every active subscription is "pro".
+- No functional feature gap between Pro and Premium yet — both just unlock
+  unlimited listings. The product doesn't have a second feature to gate on
+  (more template variants, team seats, etc. are all unbuilt), so inventing
+  one felt worse than being upfront about it: the $20 difference is
+  currently a "support tier" until there's something concrete to attach to
+  Premium.
+- `supabase/migrations/20260828000000_redemption_codes.sql`: adds
+  `agents.bonus_listings_remaining`, a `redemption_codes` table (code,
+  bonus amount, optional max-redemptions/expiry), an `agent_redemptions`
+  join table (one redemption per agent per code), and two Postgres
+  functions — `redeem_code()` validates + records + credits the bonus
+  atomically in one transaction (handles invalid/expired/exhausted/
+  already-redeemed as distinct return values), `consume_bonus_listing()`
+  atomically spends one bonus listing via an `UPDATE ... WHERE
+  bonus_listings_remaining > 0` guard, so concurrent requests can't
+  double-spend the last one. Seeds one starter code, `WELCOME10`.
+  `src/lib/quota.ts` now has two functions instead of one:
+  `hasListingQuota()` (read-only, for what the UI shows) and
+  `consumeListingQuota()` (the real enforcement point `createListing`
+  calls — only actually spends a bonus listing when the agent is already
+  over their monthly free limit).
+- Dashboard has a "Have a code?" input (free tier only) wired to a
+  `redeemCode` server action, and shows `bonus_listings_remaining` next to
+  the plan name when nonzero.
+
+Build/lint/typecheck pass; confirmed via `npm run dev` that `/dashboard`,
+`/api/billing/checkout`, and `/dashboard/listings/new` still correctly
+redirect to `/sign-in` when signed out (checked after these changes since
+the checkout route's request-parsing order changed).
+
+**Deliberately not built — needs a decision first**: the "code arrives by
+email ~2 weeks after signup" automation. That needs an email provider
+(e.g. Resend, SendGrid, Postmark) plus a scheduled job (Vercel Cron
+calling a route daily that finds free-tier agents whose `created_at` is
+~14 days ago and hasn't been sent one yet — needs a new
+`retention_code_sent_at` column to track that) to send `WELCOME10` (or a
+freshly-generated per-agent code, if you'd rather each agent get a unique
+one). Redeeming still works right now by just handing someone the code
+directly. Same pattern as every other third-party integration in this
+project: tell me which email provider you want and I'll build the send +
+scheduling once you have an account for it.
+
+**Not verified — same Stripe gap as step 8, now also needs the second
+Price**: create a second recurring Price in the Stripe Dashboard for
+Premium ($49) alongside the Pro one, and send me its id for
+`NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM`.

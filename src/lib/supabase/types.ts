@@ -1,6 +1,6 @@
 export type AssetType = "flyer_pdf" | "ig_post" | "ig_story" | "fb_post";
 export type ListingStatus = "active" | "just_listed" | "pending" | "sold";
-export type SubscriptionTier = "free" | "pro";
+export type SubscriptionTier = "free" | "pro" | "premium";
 
 export type Agent = {
   id: string;
@@ -16,6 +16,7 @@ export type Agent = {
   font_choice: string;
   stripe_customer_id: string | null;
   subscription_tier: SubscriptionTier;
+  bonus_listings_remaining: number;
   created_at: string;
 };
 
@@ -82,6 +83,15 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      redeem_code: {
+        Args: { p_agent_id: string; p_code: string };
+        Returns: string;
+      };
+      consume_bonus_listing: {
+        Args: { p_agent_id: string };
+        Returns: boolean;
+      };
+    };
   };
 };

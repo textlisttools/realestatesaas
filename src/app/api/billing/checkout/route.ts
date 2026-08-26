@@ -1,15 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getOrCreateAgent } from "@/lib/agents";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isPaidTier, priceIdForTier } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   const agent = await getOrCreateAgent();
 
-  const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO;
+  const formData = await request.formData();
+  const tierInput = formData.get("tier");
+  if (typeof tierInput !== "string" || !isPaidTier(tierInput)) {
+    return NextResponse.json({ error: "Missing or invalid tier." }, { status: 400 });
+  }
+
+  const priceId = priceIdForTier(tierInput);
   if (!priceId) {
     return NextResponse.json(
-      { error: "Missing NEXT_PUBLIC_STRIPE_PRICE_ID_PRO environment variable." },
+      { error: `Missing price id environment variable for tier "${tierInput}".` },
       { status: 500 }
     );
   }

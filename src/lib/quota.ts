@@ -17,8 +17,32 @@ export async function countListingsThisMonth(agentId: string): Promise<number> {
   return count ?? 0;
 }
 
+/** Read-only — for deciding what to show in the UI. Never gates creation on its own. */
 export async function hasListingQuota(agent: Agent): Promise<boolean> {
-  if (agent.subscription_tier === "pro") return true;
+  if (agent.subscription_tier !== "free") return true;
+  if (agent.bonus_listings_remaining > 0) return true;
   const count = await countListingsThisMonth(agent.id);
   return count < FREE_TIER_LISTING_LIMIT;
+}
+
+/**
+ * The actual enforcement point — call this from createListing, not
+ * hasListingQuota. Paid tiers and agents still under their monthly limit
+ * pass for free; a free-tier agent over the limit spends one bonus listing
+ * atomically (via a Postgres function, so concurrent requests can't both
+ * succeed off the same last bonus listing) and only passes if one was
+ * actually available to spend.
+ */
+export async function consumeListingQuota(agent: Agent): Promise<boolean> {
+  if (agent.subscription_tier !== "free") return true;
+
+  const count = await countListingsThisMonth(agent.id);
+  if (count < FREE_TIER_LISTING_LIMIT) return true;
+
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase.rpc("consume_bonus_listing", {
+    p_agent_id: agent.id,
+  });
+  if (error) throw error;
+  return data === true;
 }

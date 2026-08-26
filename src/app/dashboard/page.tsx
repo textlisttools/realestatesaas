@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { getOrCreateAgent } from "@/lib/agents";
-import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
+import { FREE_TIER_LISTING_LIMIT, PAID_TIERS } from "@/lib/stripe";
+import { redeemCode } from "./actions";
 
-export default async function DashboardPage() {
+const TIER_LABEL: Record<string, string> = {
+  free: "Free plan",
+  pro: "Pro plan",
+  premium: "Premium plan",
+};
+
+export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const agent = await getOrCreateAgent();
+  const searchParams = await props.searchParams;
+  const redeemMessage =
+    typeof searchParams.message === "string" ? searchParams.message : null;
+  const redeemOk = searchParams.redeem === "ok";
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-8 max-w-3xl mx-auto w-full">
@@ -61,33 +72,67 @@ export default async function DashboardPage() {
         <span className="text-gray-500">&rarr;</span>
       </Link>
 
-      <div className="flex items-center justify-between rounded-lg border border-black/10 p-4 text-sm dark:border-white/15">
-        <div>
-          <span className="font-medium">
-            {agent.subscription_tier === "pro" ? "Pro plan" : "Free plan"}
-          </span>
-          {agent.subscription_tier === "free" && (
-            <span className="text-gray-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
+      <div className="flex flex-col gap-4 rounded-lg border border-black/10 p-4 dark:border-white/15">
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <span className="font-medium">{TIER_LABEL[agent.subscription_tier]}</span>
+            {agent.subscription_tier === "free" && (
+              <span className="text-gray-500"> — {FREE_TIER_LISTING_LIMIT} listings/month</span>
+            )}
+            {agent.bonus_listings_remaining > 0 && (
+              <span className="text-gray-500">
+                {" "}
+                (+{agent.bonus_listings_remaining} bonus)
+              </span>
+            )}
+          </div>
+          {agent.subscription_tier !== "free" && (
+            <form action="/api/billing/portal" method="post">
+              <button
+                type="submit"
+                className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+              >
+                Manage billing
+              </button>
+            </form>
           )}
         </div>
-        {agent.subscription_tier === "pro" ? (
-          <form action="/api/billing/portal" method="post">
-            <button
-              type="submit"
-              className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
-            >
-              Manage billing
-            </button>
-          </form>
-        ) : (
-          <form action="/api/billing/checkout" method="post">
-            <button
-              type="submit"
-              className="h-9 rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-            >
-              Upgrade to Pro
-            </button>
-          </form>
+
+        {agent.subscription_tier === "free" && (
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              {PAID_TIERS.map(({ tier, label, displayPrice }) => (
+                <form key={tier} action="/api/billing/checkout" method="post">
+                  <input type="hidden" name="tier" value={tier} />
+                  <button
+                    type="submit"
+                    className="h-9 rounded-full bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+                  >
+                    Upgrade to {label} ({displayPrice})
+                  </button>
+                </form>
+              ))}
+            </div>
+
+            <form action={redeemCode} className="flex gap-2">
+              <input
+                name="code"
+                placeholder="Have a code?"
+                className="rounded border border-black/10 px-3 py-2 text-sm dark:border-white/15 dark:bg-black"
+              />
+              <button
+                type="submit"
+                className="h-9 rounded-full border border-black/10 px-4 text-sm transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+              >
+                Redeem
+              </button>
+            </form>
+            {redeemMessage && (
+              <p className={`text-sm ${redeemOk ? "text-green-600" : "text-red-600"}`}>
+                {redeemMessage}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
