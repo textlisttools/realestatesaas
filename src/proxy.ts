@@ -1,12 +1,10 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+// Establishes the Clerk auth context for every request. Route protection
+// itself lives in each protected page/action via `auth.protect()`, per
+// Clerk's guidance: middleware-based path matching can diverge from how
+// Next.js actually routes requests and leave a resource unprotected.
+export default clerkMiddleware();
 
 export const config = {
   matcher: [

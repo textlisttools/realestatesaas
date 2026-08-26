@@ -155,7 +155,33 @@ create table generated_assets (
       swatches) with an edit link. **Live and confirmed end-to-end** —
       bucket migration run, logo uploaded and name/brokerage/colors saved
       through the deployed Vercel URL, dashboard card renders it correctly.
-- [ ] Step 4: Listing form + photo upload
+- [x] Step 4: Listing form built at `/dashboard/listings/new` (address,
+      city/state/zip, price/beds/baths/sqft, status dropdown, MLS number,
+      description, multi-photo upload — first selected photo becomes the
+      hero). `/dashboard/listings` lists an agent's listings with a "New
+      listing" link; dashboard links to it. Photos go to a new public
+      `listing-photos` Storage bucket
+      (`supabase/migrations/20260826020000_listing_photos_bucket.sql`),
+      same service-role-only upload pattern as brand assets, 8MB/photo cap,
+      up to 12 photos, `listing_photos.sort_order`/`is_hero` set from
+      upload order. **Needs the bucket migration run** before uploads work.
+      Also fixed a latent gap noticed while smoke-testing this step: Clerk
+      flagged `createRouteMatcher`-based middleware protection (from step
+      2) as deprecated, specifically because path matching in middleware
+      can diverge from actual Next.js routing and leave a page
+      unprotected — true here, since `/dashboard/listings/new`'s page
+      component never called `getOrCreateAgent()` and had no protection of
+      its own, relying solely on the middleware matcher string. Moved to
+      Clerk's recommended resource-based checks instead: `src/proxy.ts` is
+      now a bare `clerkMiddleware()` (just establishes the auth context),
+      `getOrCreateAgent()` calls `auth.protect()` first (covering every
+      page/action that already calls it), and the one page that didn't —
+      `/dashboard/listings/new` — now calls `auth.protect()` directly.
+      Verified via `npm run dev`: `/dashboard`, `/dashboard/listings`, and
+      `/dashboard/listings/new` all redirect to `/sign-in` when signed
+      out, deprecation warning gone. Build/lint/typecheck pass; the actual
+      create-listing → photos-in-Storage → `listing_photos` rows flow
+      still needs a real browser click-through plus that bucket existing.
 - [ ] Step 5: Template components
 - [ ] Step 6: Puppeteer render pipeline
 - [ ] Step 7: Dashboard

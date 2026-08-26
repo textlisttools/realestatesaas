@@ -12,8 +12,7 @@ export default async function DashboardPage() {
         <UserButton />
       </div>
       <p className="text-sm text-gray-500">
-        Signed in as {agent.email ?? agent.clerk_user_id}. Listing management
-        lands here in the next step.
+        Signed in as {agent.email ?? agent.clerk_user_id}.
       </p>
 
       <div className="flex items-center gap-4 rounded-lg border border-black/10 p-4 dark:border-white/15">
@@ -52,6 +51,14 @@ export default async function DashboardPage() {
           Edit brand kit
         </Link>
       </div>
+
+      <Link
+        href="/dashboard/listings"
+        className="flex items-center justify-between rounded-lg border border-black/10 p-4 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/15 dark:hover:bg-[#1a1a1a]"
+      >
+        Listings
+        <span className="text-gray-500">&rarr;</span>
+      </Link>
     </div>
   );
 }
