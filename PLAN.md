@@ -115,15 +115,13 @@ create table generated_assets (
 ## Status
 
 - [x] Step 1: Next.js App Router project scaffolded, Supabase client wiring
-      and schema migration written. **Blocked on live confirmation** — this
-      environment has no Supabase project credentials and no Docker (so
-      `supabase start` can't run locally either). Once `SUPABASE_URL` and
-      `SUPABASE_SERVICE_ROLE_KEY` (and `NEXT_PUBLIC_SUPABASE_URL` /
-      `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are set — either in `.env.local` or as
-      real values handed to this session — run `npx supabase db push`
-      (after `npx supabase link --project-ref <ref>`) to apply
-      `supabase/migrations/20260826000000_init.sql`, then hit
-      `/api/health/db` to confirm all four tables are reachable.
+      and schema migration written. **Live and confirmed** — project
+      `glowpioqkptggxkrhsxx`, migration applied via the Supabase SQL Editor
+      (this sandbox's network policy blocks direct outbound to supabase.co,
+      so the CLI/`/api/health/db` route couldn't verify it from here; the
+      user confirmed all four tables via a SQL Editor query instead).
+      `.env.local` (gitignored) holds the project URL + anon/service-role
+      keys for local `npm run dev` use.
 - [ ] Step 2: Clerk auth
 - [ ] Step 3: Brand kit onboarding
 - [ ] Step 4: Listing form + photo upload
