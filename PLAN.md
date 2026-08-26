@@ -277,10 +277,10 @@ create table generated_assets (
       unauthenticated now correctly returns `401 {"error": "Not
       authenticated"}` instead of crashing.
 
-      **Still unverified**: the real Supabase Storage upload + `INSERT
-      INTO generated_assets` (network-blocked here, same as every other
-      step) — needs the bucket migration run, then a real click through
-      "Generate assets" on a deployed listing with actual photos.
+      **Live and confirmed end-to-end** — bucket migration run, "Generate
+      assets" clicked (several times, while debugging the two Vercel gaps
+      below) through the deployed Vercel URL, all three asset types showed
+      up on the listing detail page with working download links.
 
       **Follow-up after a real "internal server error" on Vercel**: found
       and fixed two real deploy-time gaps, neither reachable from this
@@ -302,5 +302,29 @@ create table generated_assets (
          and doing three Storage uploads realistically won't fit in that.
          Added `export const config: PageConfig = { maxDuration: 60 }` (60s
          is the ceiling on the Hobby plan).
-- [ ] Step 7: Dashboard
+- [x] Step 7: The listings table (`/dashboard/listings`) → detail page
+      (`/dashboard/listings/[id]`, "Generate assets" button) → thumbnails →
+      download flow from the plan was already in place from steps 4-6;
+      this step filled in the two pieces it was still missing: thumbnails
+      on the generated-assets list (a real `<img>` for the two PNG types,
+      a plain "PDF" placeholder tile for the flyer — no library for actual
+      PDF thumbnailing), and a "Download all (.zip)" link next to the
+      per-asset download links. The zip endpoint
+      (`src/app/api/listings/[id]/download-zip/route.ts`, a normal App
+      Router Route Handler — no react-dom/server involved, so none of step
+      6's Pages Router detour applies here) takes the most recent row per
+      `asset_type` (repeated "Generate assets" clicks — including the ones
+      from debugging step 6 — pile up rows, so this avoids zipping stale
+      duplicates), fetches each `file_url` server-side, and bundles them
+      with `jszip`. Hit a real TypeScript issue getting the zip bytes into
+      a `NextResponse`: newer TS distinguishes `ArrayBuffer` from
+      `SharedArrayBuffer` in `ArrayBufferView`'s `.buffer` type, and
+      jszip's `Uint8Array` output is generically typed over the wider
+      `ArrayBufferLike`, so `BodyInit`/`BlobPart` rejected it — a type-level
+      false positive (Node's zip output is never actually
+      `SharedArrayBuffer`-backed), fixed with one documented cast, not a
+      runtime bug. Build/lint/typecheck pass; confirmed via `npm run dev`
+      that both new/changed routes correctly redirect to `/sign-in` when
+      signed out. Actual zip contents and thumbnail rendering with real
+      generated assets still need a real browser look.
 - [ ] Step 8: Stripe integration

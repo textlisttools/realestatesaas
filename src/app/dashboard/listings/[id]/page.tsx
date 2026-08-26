@@ -11,6 +11,24 @@ const ASSET_LABEL: Record<AssetType, string> = {
   fb_post: "Facebook post",
 };
 
+function AssetThumbnail({ asset }: { asset: GeneratedAsset }) {
+  if (asset.asset_type === "flyer_pdf" || !asset.file_url) {
+    return (
+      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded border border-black/10 text-[10px] font-medium text-gray-500 dark:border-white/15">
+        PDF
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL, not a static local asset
+    <img
+      src={asset.file_url}
+      alt=""
+      className="h-14 w-14 flex-shrink-0 rounded border border-black/10 object-cover dark:border-white/15"
+    />
+  );
+}
+
 export default async function ListingDetailPage(
   props: PageProps<"/dashboard/listings/[id]">
 ) {
@@ -71,7 +89,17 @@ export default async function ListingDetailPage(
       </form>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Generated assets</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Generated assets</h2>
+          {assets.length > 0 && (
+            <a
+              href={`/api/listings/${id}/download-zip`}
+              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Download all (.zip)
+            </a>
+          )}
+        </div>
         {assets.length === 0 ? (
           <p className="text-sm text-gray-500">
             Nothing generated yet — click &quot;Generate assets&quot; above.
@@ -81,9 +109,10 @@ export default async function ListingDetailPage(
             {assets.map((asset: GeneratedAsset) => (
               <li
                 key={asset.id}
-                className="flex items-center justify-between rounded-lg border border-black/10 p-3 text-sm dark:border-white/15"
+                className="flex items-center gap-3 rounded-lg border border-black/10 p-3 text-sm dark:border-white/15"
               >
-                <span>{ASSET_LABEL[asset.asset_type]}</span>
+                <AssetThumbnail asset={asset} />
+                <span className="flex-1">{ASSET_LABEL[asset.asset_type]}</span>
                 {asset.file_url && (
                   <a
                     href={asset.file_url}
