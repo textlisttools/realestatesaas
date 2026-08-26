@@ -122,7 +122,24 @@ create table generated_assets (
       user confirmed all four tables via a SQL Editor query instead).
       `.env.local` (gitignored) holds the project URL + anon/service-role
       keys for local `npm run dev` use.
-- [ ] Step 2: Clerk auth
+- [x] Step 2: Clerk auth wired up — `ClerkProvider` in the root layout,
+      `src/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`; this
+      build flagged the old name as deprecated) protects `/dashboard(.*)`
+      via `clerkMiddleware`/`auth.protect()`, `/sign-in` and `/sign-up`
+      catch-all routes render Clerk's hosted `<SignIn>`/`<SignUp>`, and
+      `src/lib/agents.ts#getOrCreateAgent()` looks up (or inserts) the
+      `agents` row for the signed-in Clerk user — called from
+      `/dashboard`, so the row is created on first authenticated visit
+      rather than via a webhook (no public URL to receive one in this
+      sandbox). Verified locally: build is clean, and `npm run dev` here
+      confirmed `/` renders signed-out state, `/dashboard` redirects to
+      `/sign-in` when unauthenticated, and `/sign-in` renders Clerk's
+      widget — full sign-up → dashboard → agent-row-created flow still
+      needs a real browser click-through (can't drive Clerk's hosted UI
+      from curl). Note: installed `@clerk/nextjs` is v7 ("Core 3"), which
+      removed `<SignedIn>`/`<SignedOut>`/`<Protect>` in favor of a single
+      async server `<Show when="signed-in" | "signed-out">` component —
+      used that instead on the home page.
 - [ ] Step 3: Brand kit onboarding
 - [ ] Step 4: Listing form + photo upload
 - [ ] Step 5: Template components
