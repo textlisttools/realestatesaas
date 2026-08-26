@@ -185,7 +185,37 @@ create table generated_assets (
       **Live and confirmed** — bucket migration run, listing created with
       photos through the deployed Vercel URL, shows up correctly on
       `/dashboard/listings`.
-- [ ] Step 5: Template components
+- [x] Step 5: All three templates built as standalone components in
+      `src/components/templates/` — `FlyerTemplate` (2550×3300, hero /
+      stat row / up-to-3-photo grid / primary-color footer bar with
+      headshot+logo+name+phone+email), `InstagramPostTemplate` (1080×1080,
+      full-bleed hero, secondary-color price badge, bottom gradient with
+      address+stats, corner logo), `InstagramStoryTemplate` (1080×1920,
+      full-bleed hero, top status banner in primary color — FOR SALE /
+      JUST LISTED / PENDING / SOLD from `listing.status` — bottom gradient
+      with address+stats+agent). All three take the same `TemplateData`
+      shape (`types.ts`) built by `src/lib/listings.ts#toTemplateData()`,
+      which also scopes listing lookup to the signed-in agent's `id` so
+      one agent can't load another's listing by guessing a UUID. Shared
+      `format.ts` handles price/address/stats formatting and a
+      font-choice → CSS font-stack map. Plain `<img>` (not `next/image`)
+      throughout — deliberate, since these get screenshotted/printed by
+      Puppeteer at exact pixel dimensions in step 6, where `next/image`'s
+      lazy-loading and srcset would work against a fixed-size render
+      target rather than for it. Preview pages at
+      `/dashboard/listings/[id]/{flyer,ig-post,ig-story}` render each
+      template at true pixel size inside a `TemplatePreview` wrapper that
+      only scales the on-screen view (via CSS `transform: scale`) —
+      matches the plan's stated purpose of debugging templates in
+      isolation before wiring to Puppeteer, and step 6 can render the
+      template components directly, unscaled. `/dashboard/listings` links
+      to all three per listing. Build/lint/typecheck pass; confirmed via
+      `npm run dev` that all three preview routes correctly redirect
+      unauthenticated requests to `/sign-in`. Visual correctness with a
+      real listing's photos/brand data still needs a real browser
+      look — nothing to verify differently here since these are pure
+      presentational components with no separate "live" step, unlike
+      earlier steps that needed a bucket or schema to exist first.
 - [ ] Step 6: Puppeteer render pipeline
 - [ ] Step 7: Dashboard
 - [ ] Step 8: Stripe integration
