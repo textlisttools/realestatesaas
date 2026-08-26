@@ -279,9 +279,28 @@ create table generated_assets (
 
       **Still unverified**: the real Supabase Storage upload + `INSERT
       INTO generated_assets` (network-blocked here, same as every other
-      step), and `@sparticuz/chromium` actually launching on Vercel's
-      serverless runtime — needs the bucket migration run, then a real
-      click through "Generate assets" on a deployed listing with actual
-      photos.
+      step) — needs the bucket migration run, then a real click through
+      "Generate assets" on a deployed listing with actual photos.
+
+      **Follow-up after a real "internal server error" on Vercel**: found
+      and fixed two real deploy-time gaps, neither reachable from this
+      sandbox (no serverless environment to test against), but both
+      confirmed structurally:
+      1. `@sparticuz/chromium`'s binary (`node_modules/@sparticuz/chromium/
+         bin/*.br`) is loaded via dynamic path resolution, not a static
+         `require()`, so Vercel's build-time file tracer doesn't detect it
+         as a dependency and leaves it out of the deployed function by
+         default. Added `outputFileTracingIncludes` in `next.config.ts` for
+         `/api/**/*`. Verified locally, without needing Vercel: built once
+         without the config and once with it, and inspected the actual Node
+         File Trace manifest Next generates
+         (`.next/server/pages/api/listings/[id]/generate-assets.js.nft.json`)
+         — 0 of the four `.br` binary files traced without the config,
+         all 4 traced with it.
+      2. No `maxDuration` was set, so the route was on Vercel's default 10s
+         function timeout — launching Chromium, rendering three templates,
+         and doing three Storage uploads realistically won't fit in that.
+         Added `export const config: PageConfig = { maxDuration: 60 }` (60s
+         is the ceiling on the Hobby plan).
 - [ ] Step 7: Dashboard
 - [ ] Step 8: Stripe integration

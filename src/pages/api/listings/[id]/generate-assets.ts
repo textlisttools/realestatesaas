@@ -1,8 +1,13 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse, PageConfig } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { getOrCreateAgentForClerkUser } from "@/lib/agents";
 import { findListingForAgent, toTemplateData } from "@/lib/listings";
 import { generateListingAssets } from "@/lib/render/generateAssets";
+
+// Launching Chromium + rendering 3 templates + 3 Storage uploads comfortably
+// exceeds Vercel's default 10s function timeout. 60s is the ceiling on the
+// Hobby plan; Pro/Enterprise projects can raise this further if needed.
+export const config: PageConfig = { maxDuration: 60 };
 
 // Deliberately a Pages Router API route, not an App Router Route Handler:
 // generateListingAssets pulls in react-dom/server (via Puppeteer's HTML
