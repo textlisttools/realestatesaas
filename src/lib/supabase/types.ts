@@ -1,4 +1,4 @@
-export type AssetType = "flyer_pdf" | "ig_post" | "ig_story" | "fb_post";
+export type AssetType = "flyer_pdf" | "ig_post" | "ig_story" | "fb_post" | "tiktok_slideshow";
 export type ListingStatus = "active" | "just_listed" | "pending" | "sold";
 export type SubscriptionTier = "free" | "pro" | "premium";
 

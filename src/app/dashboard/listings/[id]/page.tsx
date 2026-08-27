@@ -3,12 +3,14 @@ import { getOrCreateAgent } from "@/lib/agents";
 import { getListingForAgent } from "@/lib/listings";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import type { AssetType, GeneratedAsset } from "@/lib/supabase/types";
+import TikTokSlideshowForm from "./TikTokSlideshowForm";
 
 const ASSET_LABEL: Record<AssetType, string> = {
   flyer_pdf: "Flyer (PDF)",
   ig_post: "Instagram post",
   ig_story: "Instagram story",
   fb_post: "Facebook post",
+  tiktok_slideshow: "TikTok slideshow",
 };
 
 function AssetThumbnail({ asset }: { asset: GeneratedAsset }) {
@@ -16,6 +18,13 @@ function AssetThumbnail({ asset }: { asset: GeneratedAsset }) {
     return (
       <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded border border-black/10 text-[10px] font-medium text-zinc-500">
         PDF
+      </div>
+    );
+  }
+  if (asset.asset_type === "tiktok_slideshow") {
+    return (
+      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded border border-black/10 text-[10px] font-medium text-zinc-500">
+        MP4
       </div>
     );
   }
@@ -34,7 +43,7 @@ export default async function ListingDetailPage(
 ) {
   const { id } = await props.params;
   const agent = await getOrCreateAgent();
-  const { listing } = await getListingForAgent(id, agent.id);
+  const { listing, photos } = await getListingForAgent(id, agent.id);
 
   const supabase = createServiceRoleClient();
   const { data: assets, error } = await supabase
@@ -89,6 +98,21 @@ export default async function ListingDetailPage(
           Generate assets
         </button>
       </form>
+
+      <div className="flex flex-col gap-3 rounded-lg border border-black/10 bg-white p-4">
+        <div>
+          <h2 className="text-sm font-bold text-black">TikTok slideshow</h2>
+          <p className="mt-1 text-xs text-zinc-600">
+            Pick 3-7 photos below. We&apos;ll build a silent vertical slideshow with the
+            address, price, and stats captioned over each photo — download it and add
+            whatever sound or voiceover you want in TikTok.
+          </p>
+        </div>
+        <TikTokSlideshowForm
+          listingId={id}
+          photos={photos.map((p) => ({ id: p.id, photo_url: p.photo_url }))}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">

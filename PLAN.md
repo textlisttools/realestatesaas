@@ -676,3 +676,102 @@ the page `<title>`, city/state/zip came back empty — exactly the
 forces the agent to trust an import instead of typing it themselves).
 Still needs a look on the real deployment against an actual agent
 website to see how well the heuristics hold up on real-world markup.
+
+## Follow-up: TikTok slideshow generator
+
+Requested after discussing direct TikTok publishing (deferred — needs a
+Meta App Review-gated Graph API integration or a paid aggregator like
+Ayrshare, not worth building yet). This is the lighter-weight version
+that was greenlit instead: generate a **silent** downloadable slideshow
+video from 3-7 of a listing's existing photos (regardless of whether they
+were manually uploaded or pulled in via the URL importer — both already
+land in the same `listing_photos` table, so no new upload path was
+needed), with captions overlaid for address/price/stats, for the agent to
+download and post to TikTok themselves — adding their own sound/
+voiceover/music there. No audio track is generated at all; AI voiceover
+is a clearly separate, later idea, not attempted here.
+
+- New 4th asset type: `AssetType` gained `"tiktok_slideshow"`. No
+  migration needed — `generated_assets.asset_type` is a plain `text`
+  column with no DB-level enum constraint, so this is a TypeScript-only
+  change plus updating the two places that exhaustively switch on
+  `AssetType` (`ASSET_LABEL` and the thumbnail branch on the listing
+  detail page, `ASSET_FILENAME` in the zip-download route) — TS caught
+  both automatically since those are `Record<AssetType, ...>`.
+- `src/components/templates/TikTokSlideTemplate.tsx` — one slide: full-
+  bleed photo, bottom gradient with a title/subtitle caption pair, brand-
+  color accent bar, agent logo corner badge. Reuses the same
+  `renderElementToPng` Puppeteer pipeline and `fontStack()` helper as the
+  other three templates — same 1080×1920 canvas as the IG story.
+- `src/lib/render/tiktokSlides.ts#buildTikTokSlideCaptions()` — pure
+  function producing one caption per photo: cycles through address/
+  price+status/beds-baths-sqft for every photo except the last, which is
+  always reserved for a closing "Interested? Contact [agent]" card
+  regardless of how many photos were selected — works for any count in
+  the 3-7 range without a fixed slide template.
+- `src/lib/render/video.ts#framesToSlideshowMp4()` — new dependency,
+  `ffmpeg-static` (a prebuilt ffmpeg binary per platform; spawned directly
+  via `node:child_process.execFile`, not the `fluent-ffmpeg` wrapper —
+  that package is deprecated/unmaintained and its chainable API is
+  overkill for one fixed command). Encodes the rendered PNG frames into a
+  silent MP4, hard cuts only (no crossfade — kept v1 simple given
+  Vercel's function time budget is already tight for Puppeteer alone).
+  **Caught a real bug via local testing**: the first implementation used
+  the concat demuxer with a `duration N` per file plus the documented
+  "repeat the last file with no duration" workaround for the demuxer's
+  own "last entry's duration is ignored" quirk — verified locally (this
+  sandbox has both the Playwright Chromium used for step 6 and now this
+  ffmpeg binary) that the repeated sentinel entry did *not* behave as a
+  zero-length marker, adding a near-full extra slide of runtime (12s of
+  real content came out as ~15s). Switched to the `image2` demuxer's
+  `-framerate 1/N` (reads one input frame every N seconds) instead, which
+  sidesteps the whole class of bug — re-verified locally afterward: 4
+  test frames at 3s each produced an MP4 measuring exactly 12.00s via
+  `ffprobe`, correct 1080×1920/yuv420p/no-audio-stream, and a frame
+  grabbed from partway into the first slide visually confirmed the
+  caption/gradient/accent-bar overlay rendered correctly.
+- `src/lib/render/generateTikTokSlideshow.ts` — orchestrates the above:
+  launches one browser, renders each selected photo+caption to a PNG
+  frame, closes the browser, encodes the frames to MP4, uploads to the
+  existing `generated-assets` bucket (no new bucket needed), inserts the
+  `generated_assets` row.
+- New Pages Router route,
+  `src/pages/api/listings/[id]/generate-tiktok-slideshow.ts` — same
+  react-dom/server constraint as `generate-assets.ts` (see that file's
+  comment), same auth/ownership pattern. Reads `photo_ids` from the
+  posted form, filters the listing's own photos down to the selected
+  ones — preserving `listing_photos.sort_order`, not submission order —
+  and server-side re-validates the 3-7 count (never trusts the client-
+  side picker alone, consistent with this app's existing "page-level
+  hiding/limits are a convenience, not the security boundary" pattern).
+  `maxDuration: 60` (Hobby plan ceiling, same as the existing route) —
+  flagged as the one asset type most likely to actually need a paid
+  plan's higher function duration in practice, since up to 7 Puppeteer
+  screenshots plus an ffmpeg encode is meaningfully heavier than the
+  existing 3-image pipeline.
+- `src/app/dashboard/listings/[id]/TikTokSlideshowForm.tsx` — new client
+  component (photo selection needs live interactivity: a running "X of
+  3-7 selected" count with the submit button disabled outside that
+  range). Renders the listing's photos as checkable thumbnails,
+  defaulting to the first up-to-7 selected; submits `photo_ids` as a
+  repeated form field. Listing detail page shows a friendly message
+  instead of the picker when a listing has fewer than 3 photos.
+  Generated slideshow shows up in the existing "Generated assets" list
+  with an "MP4" placeholder thumbnail (same pattern as the flyer's "PDF"
+  tile) and downloads/zips alongside the other three asset types.
+- `next.config.ts`: added `ffmpeg-static`'s binary to
+  `outputFileTracingIncludes` alongside `@sparticuz/chromium`'s — same
+  reason (loaded via dynamic path resolution, so Vercel's build-time
+  tracer misses it by default). Unverified on Vercel itself (no
+  serverless environment available here), but this is the exact fix
+  already proven correct for the same class of problem in step 6.
+
+Build/lint/typecheck pass. The render/encode pipeline itself — the part
+that couldn't be verified any other way — was run for real locally
+(Playwright Chromium + the new ffmpeg binary, no Clerk/Supabase
+involved) end-to-end from React component through to a played-back MP4,
+not just built. Still needs a look on the actual deployment for the
+parts that do need Clerk/Supabase/Vercel: the photo-picker UI, real
+listing photos (vs. solid-color test images), and — the biggest open
+question — whether Vercel's Hobby-plan 60s function ceiling is actually
+enough for a full 7-photo slideshow in production.

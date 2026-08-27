@@ -10,6 +10,7 @@ const ASSET_FILENAME: Record<AssetType, string> = {
   ig_post: "instagram-post.png",
   ig_story: "instagram-story.png",
   fb_post: "facebook-post.png",
+  tiktok_slideshow: "tiktok-slideshow.mp4",
 };
 
 /** One row per asset_type — the most recently generated of each. */
