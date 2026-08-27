@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getOrCreateAgent } from "@/lib/agents";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { uploadListingPhoto } from "@/lib/supabase/storage";
+import { uploadListingPhoto, uploadListingPhotoFromUrl } from "@/lib/supabase/storage";
 import { consumeListingQuota } from "@/lib/quota";
 import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
+import { fetchAndParseListing, type ParsedListing } from "@/lib/importListing";
 import type { ListingStatus } from "@/lib/supabase/types";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -23,6 +24,23 @@ function readNumber(formData: FormData, key: string): number | null {
   if (value === null) return null;
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
+}
+
+export type ImportListingResult =
+  | { ok: true; listing: ParsedListing }
+  | { ok: false; error: string };
+
+export async function importListingFromUrl(url: string): Promise<ImportListingResult> {
+  await getOrCreateAgent();
+  try {
+    const listing = await fetchAndParseListing(url);
+    return { ok: true, listing };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Something went wrong importing that URL.",
+    };
+  }
 }
 
 export async function createListing(formData: FormData) {
@@ -68,12 +86,40 @@ export async function createListing(formData: FormData) {
 
   if (insertError) throw insertError;
 
-  const photos = formData
-    .getAll("photos")
-    .filter((entry): entry is File => entry instanceof File && entry.size > 0)
-    .slice(0, MAX_PHOTOS);
+  // Imported photos (from a scraped listing URL) go first, so the first one stays
+  // the hero image; locally-attached files fill any remaining slots after that.
+  const importedPhotoUrls = formData
+    .getAll("imported_photo_urls")
+    .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
 
-  for (const [index, photo] of photos.entries()) {
+  const localPhotos = formData
+    .getAll("photos")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+
+  let index = 0;
+
+  for (const sourceUrl of importedPhotoUrls) {
+    if (index >= MAX_PHOTOS) break;
+    // A single bad remote image (dead link, blocked hotlink, etc.) shouldn't abort
+    // the whole listing — skip it and keep the ones that did download.
+    let photoUrl: string;
+    try {
+      photoUrl = await uploadListingPhotoFromUrl(listing.id, index, sourceUrl);
+    } catch {
+      continue;
+    }
+    const { error: photoError } = await supabase.from("listing_photos").insert({
+      listing_id: listing.id,
+      photo_url: photoUrl,
+      sort_order: index,
+      is_hero: index === 0,
+    });
+    if (photoError) throw photoError;
+    index++;
+  }
+
+  for (const photo of localPhotos) {
+    if (index >= MAX_PHOTOS) break;
     if (photo.size > MAX_FILE_BYTES) {
       throw new Error(`${photo.name} is over 8MB`);
     }
@@ -85,6 +131,7 @@ export async function createListing(formData: FormData) {
       is_hero: index === 0,
     });
     if (photoError) throw photoError;
+    index++;
   }
 
   revalidatePath("/dashboard/listings");

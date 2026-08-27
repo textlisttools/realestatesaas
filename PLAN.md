@@ -601,3 +601,78 @@ Fix:
   individual edits.
 
 Build/lint/typecheck pass.
+
+## Follow-up: import a listing from a URL (own-website scraping)
+
+Requested after discussing MLS/IDX integration options (deferred — needs
+per-agent MLS credentials and a licensing agreement, too much friction for
+now). This is the lighter-weight version: paste the URL of a listing on
+the agent's *own* IDX-powered website (not a general MLS/Zillow scrape —
+much lower ToS risk since it's the agent's own licensed listing display),
+and prefill the New Listing form from it. Manual entry stays fully intact
+as the fallback/default — nothing about the existing flow changed if you
+skip the import box.
+
+- `src/lib/importListing.ts`: `fetchAndParseListing(url)` fetches the page
+  server-side (15s timeout, browser-like User-Agent, follows redirects)
+  and hands the HTML to `parseListingFromHtml(html, sourceUrl)`, which
+  tries three extraction strategies in order and merges whatever each one
+  finds: (1) `<script type="application/ld+json">` schema.org blocks
+  (`address`, `offers.price`, `numberOfBedrooms`, `floorSize`, `image`) —
+  most reliable when present; (2) Open Graph meta tags
+  (`og:title`/`og:description`/`og:image`) and `itemprop` microdata
+  fallbacks for address parts; (3) regex over the page's visible text for
+  the "4 bd · 2 ba · 1,772 sqft" / "$185,000" / "MLS® 181932" style
+  patterns IDX platforms render as plain text regardless of underlying
+  markup — this is what actually carries most of the extraction on
+  simpler IDX sites with no structured data at all, confirmed against a
+  synthetic page modeled on the screenshot the user sent (a real IDX
+  results page). Photo URLs get resolved against the source page,
+  deduped, filtered to actual image extensions, and filtered for obvious
+  non-listing images (`logo`/`icon`/`avatar`/`sprite` in the URL).
+  Basic SSRF hardening: rejects non-http(s) URLs and loopback/private/
+  link-local hostnames before fetching (both the page itself and each
+  photo URL) — not exhaustive (no DNS-rebinding protection), but this is
+  only reachable by authenticated agents, not the public.
+- New server action `importListingFromUrl(url)`
+  (`src/app/dashboard/listings/new/actions.ts`) — auth-protected like
+  everything else via `getOrCreateAgent()`, never throws (catches
+  fetch/parse errors and returns `{ok:false,error}` so the client can
+  show an inline message instead of crashing the page).
+- The New Listing form (`src/app/dashboard/listings/new/page.tsx`) split
+  into a server component (auth + quota check, unchanged) rendering a new
+  client component, `ListingForm.tsx` — needed client-side state since
+  imported data has to land in the form fields interactively. An "Import
+  from a listing URL" box sits above the existing fields; on import,
+  refs are used to fill the existing uncontrolled inputs (address, city,
+  state, zip, price, beds, baths, sqft, MLS number, description) rather
+  than converting the whole form to controlled inputs — smaller diff,
+  every field stays a normal editable input the agent can override.
+  Imported photos show as removable thumbnails and ride along as hidden
+  `imported_photo_urls` fields so they submit with the rest of the form;
+  the original file-upload input is still there for manual/additional
+  photos, now labeled "Additional photos" when an import already
+  supplied some.
+- `createListing` now processes `imported_photo_urls` before the manually
+  attached files (so an imported photo stays the hero image when present)
+  and downloads+re-hosts each into the existing `listing-photos` Storage
+  bucket via a new `uploadListingPhotoFromUrl()` helper
+  (`src/lib/supabase/storage.ts`) — never linking directly to a URL we
+  don't control. A single bad remote image (dead link, hotlink
+  protection, non-image content-type) is skipped rather than aborting
+  the whole listing creation, since remote fetches are inherently more
+  failure-prone than a local file the user just picked.
+
+Added `cheerio` as a new dependency for HTML parsing/JSON-LD extraction.
+Build/lint/typecheck pass. Verified the parser directly (this sandbox
+still can't load the real app — Clerk's network block) against two
+synthetic HTML fixtures modeled on the user's screenshot: one with full
+JSON-LD + Open Graph data (address/city/state/zip/price/beds/baths/sqft/
+description/photos all extracted correctly), and one with only bare IDX
+card markup and no structured data at all (price/beds/baths/sqft/MLS
+number still extracted via the text-regex fallback; address fell back to
+the page `<title>`, city/state/zip came back empty — exactly the
+"best-effort, review before saving" behavior intended, since nothing
+forces the agent to trust an import instead of typing it themselves).
+Still needs a look on the real deployment against an actual agent
+website to see how well the heuristics hold up on real-world markup.

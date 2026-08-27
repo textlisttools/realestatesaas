@@ -2,16 +2,7 @@ import Link from "next/link";
 import { getOrCreateAgent } from "@/lib/agents";
 import { hasListingQuota } from "@/lib/quota";
 import { FREE_TIER_LISTING_LIMIT } from "@/lib/stripe";
-import { createListing } from "./actions";
-
-const STATUS_OPTIONS = [
-  { value: "active", label: "Active" },
-  { value: "just_listed", label: "Just listed" },
-  { value: "pending", label: "Pending" },
-  { value: "sold", label: "Sold" },
-];
-
-const inputClass = "rounded border border-black/10 bg-white px-3 py-2 text-sm";
+import ListingForm from "./ListingForm";
 
 export default async function NewListingPage() {
   const agent = await getOrCreateAgent();
@@ -44,87 +35,7 @@ export default async function NewListingPage() {
         </div>
       )}
 
-      <form
-        action={createListing}
-        className={`flex flex-col gap-6 ${!hasQuota ? "pointer-events-none opacity-40" : ""}`}
-      >
-        <label className="flex flex-col gap-1 text-sm">
-          Address
-          <input name="address" required className={inputClass} />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
-            City
-            <input name="city" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            State
-            <input name="state" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Zip
-            <input name="zip" className={inputClass} />
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Price
-            <input name="price" type="number" min="0" step="1" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Beds
-            <input name="beds" type="number" min="0" step="1" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Baths
-            <input name="baths" type="number" min="0" step="0.5" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Sqft
-            <input name="sqft" type="number" min="0" step="1" className={inputClass} />
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm">
-            Status
-            <select name="status" defaultValue="active" className={inputClass}>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            MLS number
-            <input name="mls_number" className={inputClass} />
-          </label>
-        </div>
-
-        <label className="flex flex-col gap-1 text-sm">
-          Description
-          <textarea name="description" rows={4} className={inputClass} />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          Photos
-          <input name="photos" type="file" accept="image/*" multiple />
-          <span className="text-xs text-zinc-500">
-            The first photo you select is used as the hero image.
-          </span>
-        </label>
-
-        <button
-          type="submit"
-          disabled={!hasQuota}
-          className="bg-brand hover:bg-brand-dark h-11 w-fit rounded-full px-6 text-sm font-medium text-white transition-colors disabled:opacity-40"
-        >
-          Save listing
-        </button>
-      </form>
+      <ListingForm hasQuota={hasQuota} />
     </div>
   );
 }
